@@ -25,3 +25,23 @@ jobs:
         with:
           name: vein-miner
           path: build/libs/*.jar
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: vein-miner
+
+      - name: Drop sources jar
+        run: rm -f *-sources.jar
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          name: Vein Miner ${{ github.ref_name }}
+          generate_release_notes: true
+          files: '*.jar'
