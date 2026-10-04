@@ -14,8 +14,9 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.tag.convention.v2.ConventionalBlockTags;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -34,14 +35,18 @@ public class VeinMiner implements ModInitializer {
      * variants of the same ore get mined together.
      */
     private static final List<TagKey<Block>> ORE_GROUPS = List.of(
-            BlockTags.COAL_ORES,
-            BlockTags.IRON_ORES,
-            BlockTags.COPPER_ORES,
-            BlockTags.GOLD_ORES,
-            BlockTags.REDSTONE_ORES,
-            BlockTags.LAPIS_ORES,
-            BlockTags.DIAMOND_ORES,
-            BlockTags.EMERALD_ORES);
+            oreTag("coal_ores"),
+            oreTag("iron_ores"),
+            oreTag("copper_ores"),
+            oreTag("gold_ores"),
+            oreTag("redstone_ores"),
+            oreTag("lapis_ores"),
+            oreTag("diamond_ores"),
+            oreTag("emerald_ores"));
+
+    private static TagKey<Block> oreTag(String name) {
+        return TagKey.create(Registries.BLOCK, Identifier.withDefaultNamespace(name));
+    }
 
     private static VeinMinerConfig config;
 
