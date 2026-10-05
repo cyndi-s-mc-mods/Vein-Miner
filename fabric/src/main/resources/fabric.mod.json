@@ -9,7 +9,7 @@
   "icon": "assets/veinminer/icon.png",
   "environment": "*",
   "entrypoints": {
-    "main": ["com.cyndi.veinminer.VeinMiner"]
+    "main": ["com.cyndi.veinminer.fabric.VeinMinerFabric"]
   },
   "depends": {
     "fabricloader": ">=${loader_version}",

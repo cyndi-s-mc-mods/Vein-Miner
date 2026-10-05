@@ -1,47 +1,52 @@
-// Minecraft 26.x ships unobfuscated, so this uses the non-remapping Loom plugin
-// and needs no mappings.
+// Declare every loader plugin here so they share one classloader across subprojects.
 plugins {
-    id 'net.fabricmc.fabric-loom' version "${loom_version}"
-    id 'maven-publish'
+    id 'net.fabricmc.fabric-loom' version "${loom_version}" apply false
+    id 'net.minecraftforge.gradle' version "${forgegradle_version}" apply false
+    id 'net.neoforged.moddev' version "${moddev_version}" apply false
 }
 
-version = project.mod_version
-group = project.maven_group
+subprojects {
+    apply plugin: 'java'
 
-base {
-    archivesName = project.archives_base_name
-}
+    version = rootProject.mod_version
+    group = rootProject.maven_group
 
-dependencies {
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
-}
-
-processResources {
-    inputs.property "version", project.version
-    inputs.property "minecraft_version", project.minecraft_version
-    inputs.property "loader_version", project.loader_version
-
-    filesMatching("fabric.mod.json") {
-        expand "version": project.version,
-                "minecraft_version": project.minecraft_version,
-                "loader_version": project.loader_version
+    base {
+        archivesName = "${rootProject.archives_base_name}-${project.name}"
     }
-}
 
-tasks.withType(JavaCompile).configureEach {
-    it.options.release = 25
-}
+    java {
+        toolchain.languageVersion = JavaLanguageVersion.of(25)
+        withSourcesJar()
+    }
 
-java {
-    withSourcesJar()
-    sourceCompatibility = JavaVersion.VERSION_25
-    targetCompatibility = JavaVersion.VERSION_25
-}
+    // Every loader compiles the shared vein mining code from common/.
+    sourceSets.main {
+        java.srcDir rootProject.file('common/src/main/java')
+        resources.srcDir rootProject.file('common/src/main/resources')
+    }
 
-jar {
-    from("LICENSE") {
-        rename { "${it}_${project.base.archivesName.get()}" }
+    tasks.withType(JavaCompile).configureEach {
+        options.encoding = 'UTF-8'
+        options.release = 25
+    }
+
+    processResources {
+        def props = [
+                version          : project.version,
+                minecraft_version: rootProject.minecraft_version,
+                loader_version   : rootProject.fabric_loader_version,
+                neoforge_version : rootProject.neoforge_version,
+        ]
+        inputs.properties props
+        filesMatching(['fabric.mod.json', 'META-INF/mods.toml', 'META-INF/neoforge.mods.toml']) {
+            expand props
+        }
+    }
+
+    jar {
+        from(rootProject.file('LICENSE')) {
+            rename { "${it}_${rootProject.archives_base_name}" }
+        }
     }
 }

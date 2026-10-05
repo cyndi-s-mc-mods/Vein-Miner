@@ -1,5 +1,6 @@
 package com.cyndi.veinminer;
 
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -10,9 +11,6 @@ import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
-import net.fabricmc.fabric.api.tag.convention.v2.ConventionalBlockTags;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -23,10 +21,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class VeinMiner implements ModInitializer {
+/** Loader-independent vein mining logic. Each loader calls {@link #onBlockBroken} from its block break event. */
+public final class VeinMinerCore {
     public static final String MOD_ID = "veinminer";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
@@ -35,33 +33,42 @@ public class VeinMiner implements ModInitializer {
      * variants of the same ore get mined together.
      */
     private static final List<TagKey<Block>> ORE_GROUPS = List.of(
-            oreTag("coal_ores"),
-            oreTag("iron_ores"),
-            oreTag("copper_ores"),
-            oreTag("gold_ores"),
-            oreTag("redstone_ores"),
-            oreTag("lapis_ores"),
-            oreTag("diamond_ores"),
-            oreTag("emerald_ores"));
+            tag("minecraft", "coal_ores"),
+            tag("minecraft", "iron_ores"),
+            tag("minecraft", "copper_ores"),
+            tag("minecraft", "gold_ores"),
+            tag("minecraft", "redstone_ores"),
+            tag("minecraft", "lapis_ores"),
+            tag("minecraft", "diamond_ores"),
+            tag("minecraft", "emerald_ores"));
 
-    private static TagKey<Block> oreTag(String name) {
-        return TagKey.create(Registries.BLOCK, Identifier.withDefaultNamespace(name));
-    }
+    /** Shared ore tag used by Fabric, Forge and NeoForge mods. */
+    private static final TagKey<Block> CONVENTIONAL_ORES = tag("c", "ores");
 
-    private static VeinMinerConfig config;
+    private static VeinMinerConfig config = new VeinMinerConfig();
 
     /** Set while we're breaking extra blocks so our own breaks don't start new veins. */
     private static boolean veinMining = false;
 
-    @Override
-    public void onInitialize() {
-        config = VeinMinerConfig.load();
-        PlayerBlockBreakEvents.AFTER.register(VeinMiner::onBlockBroken);
+    private VeinMinerCore() {}
+
+    private static TagKey<Block> tag(String namespace, String path) {
+        return TagKey.create(Registries.BLOCK, Identifier.fromNamespaceAndPath(namespace, path));
+    }
+
+    public static void init(Path configDir) {
+        config = VeinMinerConfig.load(configDir);
         LOGGER.info("Vein Miner loaded (max {} blocks, sneak required: {})", config.maxBlocks, config.requireSneak);
     }
 
-    private static void onBlockBroken(Level level, Player player, BlockPos origin, BlockState state,
-                                      BlockEntity blockEntity) {
+    /**
+     * Mines the rest of the vein around {@code origin}.
+     *
+     * @param pendingToolUses tool damage the origin block will still cause after this returns.
+     *                        0 when called after the block broke (Fabric), 1 when called just
+     *                        before (Forge and NeoForge), so tool protection leaves room for it.
+     */
+    public static void onBlockBroken(Level level, Player player, BlockPos origin, BlockState state, int pendingToolUses) {
         if (veinMining || !(player instanceof ServerPlayer serverPlayer)) return;
         if (config.requireSneak && !player.isShiftKeyDown()) return;
         if (!isOre(state)) return;
@@ -78,7 +85,7 @@ public class VeinMiner implements ModInitializer {
                     ItemStack tool = player.getMainHandItem();
                     if (tool.isEmpty() || !player.hasCorrectToolForDrops(level.getBlockState(pos))) break;
                     if (config.protectTool && tool.isDamageableItem()
-                            && tool.getMaxDamage() - tool.getDamageValue() <= 1) break;
+                            && tool.getMaxDamage() - tool.getDamageValue() <= 1 + pendingToolUses) break;
                 }
                 // Goes through the normal survival break path: drops, Fortune/Silk Touch,
                 // XP, tool damage, hunger, stats and protection mods all apply.
@@ -90,7 +97,7 @@ public class VeinMiner implements ModInitializer {
     }
 
     private static boolean isOre(BlockState state) {
-        if (state.is(Blocks.ANCIENT_DEBRIS) || state.is(ConventionalBlockTags.ORES)) return true;
+        if (state.is(Blocks.ANCIENT_DEBRIS) || state.is(CONVENTIONAL_ORES)) return true;
         for (TagKey<Block> group : ORE_GROUPS) {
             if (state.is(group)) return true;
         }

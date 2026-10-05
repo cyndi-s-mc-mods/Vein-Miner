@@ -7,8 +7,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 
-import net.fabricmc.loader.api.FabricLoader;
-
 /** Simple properties-file config stored at config/veinminer.properties. */
 public final class VeinMinerConfig {
     /** Maximum number of extra blocks broken per vein (the block you mined is not counted). */
@@ -18,16 +16,16 @@ public final class VeinMinerConfig {
     /** Stop before the tool would break, leaving it at 1 durability. */
     public boolean protectTool = true;
 
-    public static VeinMinerConfig load() {
+    public static VeinMinerConfig load(Path configDir) {
         VeinMinerConfig config = new VeinMinerConfig();
-        Path path = FabricLoader.getInstance().getConfigDir().resolve("veinminer.properties");
+        Path path = configDir.resolve("veinminer.properties");
         Properties props = new Properties();
 
         if (Files.exists(path)) {
             try (Reader reader = Files.newBufferedReader(path)) {
                 props.load(reader);
             } catch (IOException e) {
-                VeinMiner.LOGGER.warn("Could not read {}, using defaults", path, e);
+                VeinMinerCore.LOGGER.warn("Could not read {}, using defaults", path, e);
             }
         }
 
@@ -45,7 +43,7 @@ public final class VeinMinerConfig {
                 props.store(writer, "Vein Miner config");
             }
         } catch (IOException e) {
-            VeinMiner.LOGGER.warn("Could not write {}", path, e);
+            VeinMinerCore.LOGGER.warn("Could not write {}", path, e);
         }
         return config;
     }

@@ -1,0 +1,27 @@
+modLoader = "javafml"
+loaderVersion = "[66,)"
+license = "MIT"
+
+[[mods]]
+modId = "veinminer"
+version = "${version}"
+displayName = "Vein Miner"
+authors = "Cyndi's MC Mods"
+logoFile = "assets/veinminer/icon.png"
+description = '''
+Sneak while mining an ore to break the whole connected vein at once.
+'''
+
+[[dependencies.veinminer]]
+modId = "forge"
+mandatory = true
+versionRange = "[66,)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.veinminer]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[${minecraft_version},)"
+ordering = "NONE"
+side = "BOTH"
