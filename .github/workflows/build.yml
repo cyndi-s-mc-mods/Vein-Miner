@@ -26,13 +26,6 @@ jobs:
       - name: Build
         run: ./gradlew build
 
-      # TEMPORARY: list NeoForge's block break event classes if the build fails.
-      - name: Find NeoForge break events
-        if: failure()
-        run: |
-          for j in $(find ~/.gradle neoforge/build -name '*.jar' 2>/dev/null | grep -i neoforge); do
-            unzip -l "$j" 2>/dev/null | grep -oE 'net/neoforged/neoforge/event/[A-Za-z/]*Break[A-Za-z$]*\.class' | sed "s|^|$(basename $j): |"
-          done | sort -u | head -50
 
       - uses: actions/upload-artifact@v4
         with:

@@ -20,7 +20,7 @@ public class VeinMinerNeoForge {
 
     private static void onBreak(BreakBlockEvent event) {
         if (event.isCanceled() || !(event.getLevel() instanceof Level level)) return;
-        // BreakEvent fires before the block breaks, so the origin's tool damage is still to come.
+        // BreakBlockEvent fires before the block breaks, so the origin's tool damage is still to come.
         VeinMinerCore.onBlockBroken(level, event.getPlayer(), event.getPos(), event.getState(), 1);
     }
 }
